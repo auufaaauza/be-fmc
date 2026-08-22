@@ -21,20 +21,29 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'role'       => ['required', 'in:admin,student'],
+            'role'       => ['nullable', 'in:admin,student'],
             'identifier' => ['required', 'string'],
             'password'   => ['required', 'string'],
+        ], [
+            'identifier.required' => 'NISN atau Email wajib diisi.',
+            'password.required'   => 'Password wajib diisi.',
         ]);
 
-        // admin pakai email; student pakai NIS
-        $field = $data['role'] === 'student' ? 'nisn' : 'email';
+        $identifier = trim($data['identifier']);
 
-        $user = User::where('role', $data['role'])
-            ->where($field, $data['identifier'])
-            ->first();
+        $query = User::where(function ($q) use ($identifier) {
+            $q->where('email', $identifier)
+              ->orWhere('nisn', $identifier);
+        });
+
+        if (! empty($data['role'])) {
+            $query->where('role', $data['role']);
+        }
+
+        $user = $query->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
-            return response()->json(['message' => 'Login gagal. Periksa data akun.'], 422);
+            return response()->json(['message' => 'Login gagal. NISN/Email atau password salah.'], 422);
         }
 
         if (! $user->is_active) {

@@ -16,6 +16,7 @@ class Recommendation extends Model
         'counselor_notes',
         'counselor_id',
         'counselor_reviewed_at',
+        'is_validated',
     ];
 
     public function user(): BelongsTo

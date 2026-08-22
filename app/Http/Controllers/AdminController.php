@@ -201,11 +201,17 @@ class AdminController extends Controller
             'counselor_notes'       => $validated['counselor_notes'],
             'counselor_id'          => $admin->id,
             'counselor_reviewed_at' => now(),
+            'is_validated'          => true,
         ]);
 
         return response()->json([
-            'message' => 'Catatan bimbingan konseling berhasil disimpan.',
-            'data'    => $recommendation->load('counselor'),
+            'message' => 'Catatan dan validasi rekomendasi berhasil disimpan.',
+            'data'    => $recommendation->load([
+                'results.program.criteria.primarySubject',
+                'results.program.criteria.secondarySubject',
+                'results.scores.subject',
+                'counselor',
+            ]),
         ]);
     }
 
@@ -348,6 +354,12 @@ class AdminController extends Controller
 
     private function withStatus(User $student): array
     {
+        // Cek is_validated dari rekomendasi terbaru
+        $latestRec = Recommendation::where('user_id', $student->id)
+            ->latest('calculated_at')
+            ->select('is_validated')
+            ->first();
+
         return [
             'id'                      => $student->id,
             'name'                    => $student->name,
@@ -360,6 +372,7 @@ class AdminController extends Controller
             'rapor_complete'          => $student->scores_count >= 3,
             'questionnaire_complete'  => $student->questionnaire_answers_count >= QuestionnaireQuestion::count(),
             'recommendation_complete' => $student->recommendations_count > 0,
+            'is_validated'            => (bool) ($latestRec?->is_validated ?? false),
         ];
     }
 }

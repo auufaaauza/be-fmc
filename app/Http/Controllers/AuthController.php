@@ -47,9 +47,12 @@ class AuthController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('find-my-career-web')->plainTextToken;
 
-        return response()
-            ->json(['message' => 'Login berhasil.', 'user' => $user->load('school'), 'progress' => $this->progress($user->id)])
-            ->cookie('find_my_career_token', $token, 60 * 24, '/', null, false, true, false, 'Lax');
+        return response()->json([
+            'message'  => 'Login berhasil.',
+            'token'    => $token,
+            'user'     => $user->load('school'),
+            'progress' => $this->progress($user->id),
+        ]);
     }
 
     // ── Register ───────────────────────────────────────────────────────────────
@@ -107,9 +110,7 @@ class AuthController extends Controller
     {
         $request->user()?->currentAccessToken()?->delete();
 
-        return response()
-            ->json(['message' => 'Logout berhasil.'])
-            ->withoutCookie('find_my_career_token');
+        return response()->json(['message' => 'Logout berhasil.']);
     }
 
     public function me(Request $request): JsonResponse

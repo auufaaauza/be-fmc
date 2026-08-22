@@ -1,0 +1,31 @@
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+
+# Environment files
+.env
+.env.backup
+.env.testing
+.env.production
+.env.local
+
+# Testing & Cache
+.phpunit.result.cache
+/.phpunit.cache
+
+# Config & Tooling
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+
+# IDE & OS files
+/.fleet
+/.idea
+/.vscode
+.DS_Store
+Thumbs.db

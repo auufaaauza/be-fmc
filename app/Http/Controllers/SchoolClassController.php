@@ -50,7 +50,12 @@ class SchoolClassController extends Controller
         $query = SchoolClass::withCount('students');
 
         if ($user->role === 'admin') {
-            $query->where('school_id', $user->school_id);
+            if ($user->school_id) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('school_id', $user->school_id)
+                      ->orWhereNull('school_id');
+                });
+            }
         } elseif ($schoolId = $request->query('school_id')) {
             $query->where('school_id', $schoolId);
         }
@@ -72,7 +77,10 @@ class SchoolClassController extends Controller
         /** @var User $user */
         $user = $request->user();
 
-        $schoolId = $user->role === 'admin' ? $user->school_id : $request->input('school_id');
+        $defaultSchool = School::where('name', 'SMAN 18 Garut')->first() ?? School::first();
+        $schoolId = $user->role === 'admin'
+            ? ($user->school_id ?: $defaultSchool?->id)
+            : ($request->input('school_id') ?: $defaultSchool?->id);
 
         if (! $schoolId) {
             return response()->json(['message' => 'Sekolah wajib dipilih.'], 422);
@@ -116,7 +124,7 @@ class SchoolClassController extends Controller
 
         $schoolClass = SchoolClass::findOrFail($id);
 
-        if ($user->role === 'admin' && $schoolClass->school_id !== $user->school_id) {
+        if ($user->role === 'admin' && $user->school_id && $schoolClass->school_id && $schoolClass->school_id !== $user->school_id) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
 
@@ -154,7 +162,7 @@ class SchoolClassController extends Controller
 
         $schoolClass = SchoolClass::findOrFail($id);
 
-        if ($user->role === 'admin' && $schoolClass->school_id !== $user->school_id) {
+        if ($user->role === 'admin' && $user->school_id && $schoolClass->school_id && $schoolClass->school_id !== $user->school_id) {
             return response()->json(['message' => 'Akses ditolak.'], 403);
         }
 

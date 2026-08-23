@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             QuestionnaireSeeder::class,
             StudyProgramSeeder::class,
             SchoolSeeder::class,
+            SchoolClassSeeder::class,
             AdminUserSeeder::class,
         ]);
     }

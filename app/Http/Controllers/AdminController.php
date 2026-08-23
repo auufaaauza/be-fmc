@@ -30,9 +30,12 @@ class AdminController extends Controller
             ->withCount(['scores', 'questionnaireAnswers', 'recommendations'])
             ->with('school');
 
-        // Admin (Guru BK) hanya melihat siswa dari sekolahnya sendiri
+        // Admin (Guru BK) hanya melihat siswa dari sekolahnya sendiri atau siswa tanpa school_id (default)
         if ($admin->role === 'admin' && $admin->school_id) {
-            $query->where('school_id', $admin->school_id);
+            $query->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
 
         if ($class = $request->query('class')) {
@@ -46,7 +49,9 @@ class AdminController extends Controller
                 ->orWhere('class', 'like', "%{$search}%"));
         }
 
-        $students = $query->orderBy('name')->get()->map(fn (User $student) => $this->withStatus($student));
+        $questionTotal = QuestionnaireQuestion::count();
+
+        $students = $query->orderBy('name')->get()->map(fn (User $student) => $this->withStatus($student, $questionTotal));
 
         return response()->json(['data' => $students]);
     }
@@ -65,7 +70,10 @@ class AdminController extends Controller
             'is_active' => ['boolean'],
         ]);
 
-        $schoolId = $admin->role === 'admin' ? $admin->school_id : $request->input('school_id');
+        $defaultSchool = School::where('name', 'SMAN 18 Garut')->first() ?? School::first();
+        $schoolId = $admin->role === 'admin'
+            ? ($admin->school_id ?: $defaultSchool?->id)
+            : ($request->input('school_id') ?: $defaultSchool?->id);
 
         $student = User::create($data + [
             'role'      => 'student',
@@ -83,7 +91,10 @@ class AdminController extends Controller
 
         $query = User::where('role', 'student');
         if ($admin->role === 'admin' && $admin->school_id) {
-            $query->where('school_id', $admin->school_id);
+            $query->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
         $student = $query->findOrFail($id);
 
@@ -112,7 +123,10 @@ class AdminController extends Controller
 
         $query = User::where('role', 'student');
         if ($admin->role === 'admin' && $admin->school_id) {
-            $query->where('school_id', $admin->school_id);
+            $query->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
         $student = $query->findOrFail($id);
         $student->delete();
@@ -130,7 +144,10 @@ class AdminController extends Controller
 
         $query = User::where('role', 'student');
         if ($admin->role === 'admin' && $admin->school_id) {
-            $query->where('school_id', $admin->school_id);
+            $query->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
         $student = $query->findOrFail($id);
 
@@ -155,7 +172,10 @@ class AdminController extends Controller
             ]);
 
         if ($admin->role === 'admin' && $admin->school_id) {
-            $query->where('school_id', $admin->school_id);
+            $query->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
 
         $student = $query->findOrFail($id);
@@ -185,7 +205,10 @@ class AdminController extends Controller
 
         $query = User::where('role', 'student');
         if ($admin->role === 'admin' && $admin->school_id) {
-            $query->where('school_id', $admin->school_id);
+            $query->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
         $student = $query->findOrFail($id);
 
@@ -226,7 +249,10 @@ class AdminController extends Controller
             ->withCount(['scores', 'questionnaireAnswers', 'recommendations']);
 
         if ($admin->role === 'admin' && $admin->school_id) {
-            $studentQuery->where('school_id', $admin->school_id);
+            $studentQuery->where(function ($q) use ($admin) {
+                $q->where('school_id', $admin->school_id)
+                  ->orWhereNull('school_id');
+            });
         }
 
         $students = $studentQuery->get();
@@ -352,13 +378,20 @@ class AdminController extends Controller
         ]);
     }
 
-    private function withStatus(User $student): array
+    private function withStatus(User $student, int $questionTotal = 0): array
     {
-        // Cek is_validated dari rekomendasi terbaru
+        // Cek rekomendasi terbaru secara aman
         $latestRec = Recommendation::where('user_id', $student->id)
             ->latest('calculated_at')
-            ->select('is_validated')
             ->first();
+
+        $isValidated = false;
+        if ($latestRec) {
+            $isValidated = (bool) (
+                $latestRec->is_validated ??
+                ($latestRec->counselor_reviewed_at && $latestRec->counselor_notes)
+            );
+        }
 
         return [
             'id'                      => $student->id,
@@ -370,9 +403,9 @@ class AdminController extends Controller
             'school_name'             => $student->school?->name,
             'is_active'               => $student->is_active,
             'rapor_complete'          => $student->scores_count >= 3,
-            'questionnaire_complete'  => $student->questionnaire_answers_count >= QuestionnaireQuestion::count(),
+            'questionnaire_complete'  => $questionTotal > 0 ? $student->questionnaire_answers_count >= $questionTotal : false,
             'recommendation_complete' => $student->recommendations_count > 0,
-            'is_validated'            => (bool) ($latestRec?->is_validated ?? false),
+            'is_validated'            => $isValidated,
         ];
     }
 }

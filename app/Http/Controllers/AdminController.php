@@ -232,7 +232,7 @@ class AdminController extends Controller
             'data'    => $recommendation->load([
                 'results.program.criteria.primarySubject',
                 'results.program.criteria.secondarySubject',
-                'results.scores.subject',
+                'results.program.criteria.interestCategory',
                 'counselor',
             ]),
         ]);

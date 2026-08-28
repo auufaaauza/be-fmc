@@ -19,12 +19,14 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class StudentsExport implements FromCollection, WithHeadings, WithStyles, ShouldAutoSize, WithTitle, WithEvents
 {
     private int $schoolId;
+    private ?string $classFilter;
     private array $subjects;
 
-    public function __construct(int $schoolId)
+    public function __construct(int $schoolId, ?string $classFilter = null)
     {
-        $this->schoolId = $schoolId;
-        $this->subjects = Subject::orderBy('id')->get()->toArray();
+        $this->schoolId    = $schoolId;
+        $this->classFilter = $classFilter;
+        $this->subjects    = Subject::orderBy('id')->get()->toArray();
     }
 
     public function title(): string
@@ -43,12 +45,17 @@ class StudentsExport implements FromCollection, WithHeadings, WithStyles, Should
 
     public function collection()
     {
-        $students = User::where('role', 'student')
+        $query = User::where('role', 'student')
             ->where('school_id', $this->schoolId)
             ->with('scores')
             ->orderBy('class')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if ($this->classFilter) {
+            $query->where('class', $this->classFilter);
+        }
+
+        $students = $query->get();
 
         return $students->map(function (User $student, int $index) {
             $row = [

@@ -54,6 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Export / Import
         Route::get('/admin/students/export', [AdminController::class, 'exportStudents']);
+        Route::get('/admin/students/export-report', [AdminController::class, 'exportFullReport']);
         Route::post('/admin/students/import', [AdminController::class, 'importStudents']);
         Route::get('/admin/students/import-template', [AdminController::class, 'downloadImportTemplate']);
 

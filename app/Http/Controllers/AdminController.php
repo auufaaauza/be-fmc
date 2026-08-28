@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\StudentsExport;
+use App\Exports\StudentsFullReportExport;
 use App\Exports\StudentsImportTemplateExport;
 use App\Imports\StudentsImport;
 use App\Models\InterestCategory;
@@ -10,6 +11,7 @@ use App\Models\QuestionnaireAnswer;
 use App\Models\QuestionnaireQuestion;
 use App\Models\Recommendation;
 use App\Models\RecommendationResult;
+use App\Models\SchoolClass;
 use App\Models\StudentScore;
 use App\Models\StudyProgram;
 use App\Models\Subject;
@@ -304,9 +306,16 @@ class AdminController extends Controller
                 ];
             });
 
+        // 3. Total active classes for this school
+        $totalClasses = 0;
+        if ($admin->school_id) {
+            $totalClasses = SchoolClass::where('school_id', $admin->school_id)->count();
+        }
+
         return response()->json([
             'data' => [
                 'total_students'           => $students->count(),
+                'total_classes'            => $totalClasses,
                 'rapor_complete'            => $students->where('scores_count', '>=', 3)->count(),
                 'questionnaire_complete'    => $students->where('questionnaire_answers_count', '>=', $questionTotal)->count(),
                 'recommendation_complete'   => $students->where('recommendations_count', '>', 0)->count(),
@@ -332,9 +341,29 @@ class AdminController extends Controller
             return response()->json(['message' => 'Admin tidak terhubung ke sekolah.'], 422);
         }
 
+        $classFilter = $request->query('class');
         $filename = 'data-siswa-nilai_' . now()->format('Ymd_His') . '.xlsx';
 
-        return Excel::download(new StudentsExport($admin->school_id), $filename);
+        return Excel::download(new StudentsExport($admin->school_id, $classFilter), $filename);
+    }
+
+    /**
+     * Export rekap keseluruhan (multi-sheet) ke file Excel.
+     * GET /admin/students/export-report
+     */
+    public function exportFullReport(Request $request)
+    {
+        /** @var User $admin */
+        $admin = $request->user();
+
+        if (! $admin->school_id) {
+            return response()->json(['message' => 'Admin tidak terhubung ke sekolah.'], 422);
+        }
+
+        $classFilter = $request->query('class');
+        $filename    = 'rekap-siswa_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new StudentsFullReportExport($admin->school_id, $classFilter), $filename);
     }
 
     /**

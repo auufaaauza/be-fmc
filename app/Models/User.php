@@ -9,6 +9,28 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string|null $nisn
+ * @property string|null $email
+ * @property string $password
+ * @property string $role
+ * @property string|null $class
+ * @property int|null $school_id
+ * @property string|null $origin_school
+ * @property bool $is_active
+ * @property \Carbon\Carbon|null $email_verified_at
+ * @property \Carbon\Carbon|null $created_at
+ * @property \Carbon\Carbon|null $updated_at
+ * @property int|null $scores_count
+ * @property int|null $questionnaire_answers_count
+ * @property int|null $recommendations_count
+ * @property-read \App\Models\School|null $school
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\StudentScore> $scores
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\QuestionnaireAnswer> $questionnaireAnswers
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Recommendation> $recommendations
+ */
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;

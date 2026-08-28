@@ -252,6 +252,13 @@ class FullReportRecommendationsSheet implements FromCollection, WithHeadings, Wi
             $r2 = $results->get(2);
             $r3 = $results->get(3);
 
+            $calcDate = '-';
+            if ($rec->calculated_at) {
+                $calcDate = $rec->calculated_at instanceof \DateTimeInterface
+                    ? $rec->calculated_at->format('d/m/Y H:i')
+                    : date('d/m/Y H:i', strtotime((string) $rec->calculated_at));
+            }
+
             return [
                 $index + 1,
                 $rec->user?->nisn,
@@ -263,7 +270,7 @@ class FullReportRecommendationsSheet implements FromCollection, WithHeadings, Wi
                 $r2 ? number_format((float) $r2->preference_value, 4) : '-',
                 $r3?->program?->name ?? '-',
                 $r3 ? number_format((float) $r3->preference_value, 4) : '-',
-                $rec->calculated_at ? $rec->calculated_at->format('d/m/Y H:i') : '-',
+                $calcDate,
                 $rec->is_validated ? 'Ya' : 'Belum',
             ];
         });

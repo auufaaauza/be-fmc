@@ -19,6 +19,12 @@ class Recommendation extends Model
         'is_validated',
     ];
 
+    protected $casts = [
+        'calculated_at'         => 'datetime',
+        'counselor_reviewed_at' => 'datetime',
+        'is_validated'          => 'boolean',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

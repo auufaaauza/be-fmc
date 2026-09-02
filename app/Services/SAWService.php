@@ -41,9 +41,10 @@ class SAWService
 
         $results = [];
         foreach ($matrix as $data) {
-            $rPrimary = $data['primary_score'] / 100;
-            $rSecondary = $data['secondary_score'] !== null ? $data['secondary_score'] / 100 : 0;
-            $rInterest = $data['interest_score'] / 20;
+            $rPrimary = min(1.0, max(0.0, $data['primary_score'] / 100));
+            $rSecondary = $data['secondary_score'] !== null ? min(1.0, max(0.0, $data['secondary_score'] / 100)) : 0;
+            // Normalisasi C3 (Minat RIASEC): 6 butir soal per kategori x skor maksimal 5 = 30
+            $rInterest = min(1.0, max(0.0, $data['interest_score'] / 30));
 
             // Rumus SAW: Vi = jumlah dari bobot kriteria dikali nilai normalisasi.
             $vi = ($data['primary_weight'] * $rPrimary)
